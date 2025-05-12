@@ -39,7 +39,8 @@ const ItemDetail = () => {
 
   const classification = getClassification(item.classificationId);
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined) return "Not specified";
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
       currency: 'USD' 
@@ -57,8 +58,8 @@ const ItemDetail = () => {
   const handleEdit = (itemData: {
     name: string;
     photoUrl?: string;
-    purchaseDate: Date;
-    price: number;
+    purchaseDate?: Date;
+    price?: number;
     memo: string;
   }) => {
     updateItem(id, itemData);
@@ -102,10 +103,12 @@ const ItemDetail = () => {
                 <p>{classification?.name || "Unknown"}</p>
               </div>
               
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground">Purchase Date</h3>
-                <p>{item.purchaseDate.toLocaleDateString()}</p>
-              </div>
+              {item.purchaseDate && (
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground">Purchase Date</h3>
+                  <p>{item.purchaseDate.toLocaleDateString()}</p>
+                </div>
+              )}
               
               {item.memo && (
                 <div>

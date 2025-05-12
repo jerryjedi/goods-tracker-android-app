@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ImageUp } from "lucide-react";
 import { Item } from "@/types";
 
 interface ItemFormProps {
@@ -13,8 +14,8 @@ interface ItemFormProps {
   onSubmit: (itemData: {
     name: string;
     photoUrl?: string;
-    purchaseDate: Date;
-    price: number;
+    purchaseDate?: Date;
+    price?: number;
     memo: string;
   }) => void;
   title: string;
@@ -37,6 +38,9 @@ const ItemForm: React.FC<ItemFormProps> = ({
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialValues) {
@@ -49,6 +53,13 @@ const ItemForm: React.FC<ItemFormProps> = ({
         price: initialValues.price?.toString() || "",
         memo: initialValues.memo || "",
       });
+      
+      // Set image preview if photoUrl exists
+      if (initialValues.photoUrl) {
+        setImagePreview(initialValues.photoUrl);
+      } else {
+        setImagePreview(null);
+      }
     } else {
       setFormData({
         name: "",
@@ -57,7 +68,9 @@ const ItemForm: React.FC<ItemFormProps> = ({
         price: "",
         memo: "",
       });
+      setImagePreview(null);
     }
+    setSelectedFile(null);
     setErrors({});
   }, [initialValues, isOpen]);
 
@@ -71,6 +84,29 @@ const ItemForm: React.FC<ItemFormProps> = ({
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSelectedFile(file);
+      
+      // Create a preview of the image
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Clear the photoUrl as we'll use the file instead
+      setFormData({ ...formData, photoUrl: "" });
+    }
+  };
+
+  const handleSelectFile = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
@@ -78,13 +114,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
       newErrors.name = "Name is required";
     }
     
-    if (!formData.purchaseDate) {
-      newErrors.purchaseDate = "Purchase date is required";
-    }
-    
-    if (!formData.price) {
-      newErrors.price = "Price is required";
-    } else if (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0) {
+    if (formData.price && (isNaN(parseFloat(formData.price)) || parseFloat(formData.price) < 0)) {
       newErrors.price = "Price must be a valid number";
     }
     
@@ -99,9 +129,9 @@ const ItemForm: React.FC<ItemFormProps> = ({
     
     onSubmit({
       name: formData.name.trim(),
-      photoUrl: formData.photoUrl.trim() || undefined,
-      purchaseDate: new Date(formData.purchaseDate),
-      price: parseFloat(formData.price),
+      photoUrl: selectedFile ? imagePreview || undefined : formData.photoUrl.trim() || undefined,
+      purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
+      price: formData.price ? parseFloat(formData.price) : undefined,
       memo: formData.memo.trim(),
     });
     
@@ -129,18 +159,51 @@ const ItemForm: React.FC<ItemFormProps> = ({
             </div>
             
             <div>
-              <Label htmlFor="photoUrl">Photo URL</Label>
-              <Input
-                id="photoUrl"
-                name="photoUrl"
-                value={formData.photoUrl}
-                onChange={handleChange}
-                placeholder="https://example.com/photo.jpg"
-              />
+              <Label htmlFor="photo">Photo</Label>
+              <div className="mt-1 flex flex-col items-center">
+                {imagePreview && (
+                  <div className="relative w-full h-40 mb-3">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="h-full w-full object-cover rounded-md"
+                    />
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleSelectFile}
+                  className="w-full flex items-center justify-center"
+                >
+                  <ImageUp className="mr-2 h-4 w-4" />
+                  {selectedFile ? "Change Image" : "Upload Image"}
+                </Button>
+                
+                {!selectedFile && (
+                  <div className="mt-2 w-full">
+                    <Label htmlFor="photoUrl">Or enter image URL</Label>
+                    <Input
+                      id="photoUrl"
+                      name="photoUrl"
+                      value={formData.photoUrl}
+                      onChange={handleChange}
+                      placeholder="https://example.com/photo.jpg"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             
             <div>
-              <Label htmlFor="purchaseDate">Purchase Date *</Label>
+              <Label htmlFor="purchaseDate">Purchase Date (Optional)</Label>
               <Input
                 id="purchaseDate"
                 name="purchaseDate"
@@ -153,7 +216,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
             </div>
             
             <div>
-              <Label htmlFor="price">Price *</Label>
+              <Label htmlFor="price">Price (Optional)</Label>
               <Input
                 id="price"
                 name="price"
