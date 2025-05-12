@@ -10,8 +10,8 @@ export interface Item {
   name: string;
   classificationId: string;
   photoUrl?: string;
-  purchaseDate?: Date;
-  price?: number;
+  purchaseDate?: Date | null;
+  price?: number | null;
   memo: string;
   createdAt: Date;
 }
