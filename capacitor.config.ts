@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.8138238d67d545daa21b0c856b3347af',
-  appName: 'goods-tracker-android-app',
+  appName: '我的物品管理',
   webDir: 'dist',
   server: {
     url: 'https://8138238d-67d5-45da-a21b-0c856b3347af.lovableproject.com?forceHideBadge=true',
