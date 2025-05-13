@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { ImageUp } from "lucide-react";
-import { Item } from "@/types";
+import { Item, FileWithPreview } from "@/types";
+import { toast } from "sonner";
 
 interface ItemFormProps {
   isOpen: boolean;
@@ -38,9 +39,10 @@ const ItemForm: React.FC<ItemFormProps> = ({
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<FileWithPreview | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (initialValues) {
@@ -74,6 +76,15 @@ const ItemForm: React.FC<ItemFormProps> = ({
     setErrors({});
   }, [initialValues, isOpen]);
 
+  // Clean up the object URL when component unmounts or selectedFile changes
+  useEffect(() => {
+    return () => {
+      if (selectedFile?.preview && selectedFile.preview.startsWith('blob:')) {
+        URL.revokeObjectURL(selectedFile.preview);
+      }
+    };
+  }, [selectedFile]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -84,20 +95,32 @@ const ItemForm: React.FC<ItemFormProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setIsProcessing(true);
       
-      // Create a preview of the image
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      // Clear the photoUrl as we'll use the file instead
-      setFormData({ ...formData, photoUrl: "" });
+      if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        
+        // Create a blob URL for the file
+        const preview = URL.createObjectURL(file);
+        
+        // Create a FileWithPreview object
+        const fileWithPreview = Object.assign(file, { 
+          preview 
+        }) as FileWithPreview;
+        
+        setSelectedFile(fileWithPreview);
+        setImagePreview(preview);
+        
+        // Clear the photoUrl as we'll use the file instead
+        setFormData({ ...formData, photoUrl: "" });
+      }
+    } catch (error) {
+      console.error("Error processing image:", error);
+      toast.error("Failed to process the image. Please try a different one.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -181,10 +204,11 @@ const ItemForm: React.FC<ItemFormProps> = ({
                   type="button" 
                   variant="outline" 
                   onClick={handleSelectFile}
+                  disabled={isProcessing}
                   className="w-full flex items-center justify-center"
                 >
                   <ImageUp className="mr-2 h-4 w-4" />
-                  {selectedFile ? "Change Image" : "Upload Image"}
+                  {isProcessing ? "Processing..." : selectedFile ? "Change Image" : "Upload Image"}
                 </Button>
                 
                 {!selectedFile && (
@@ -246,7 +270,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit">Save</Button>
+            <Button type="submit" disabled={isProcessing}>Save</Button>
           </DialogFooter>
         </form>
       </DialogContent>

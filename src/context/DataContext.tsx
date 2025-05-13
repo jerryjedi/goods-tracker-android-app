@@ -47,7 +47,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Convert date strings back to Date objects
         setItems(parsedItems.map((i: any) => ({
           ...i,
-          purchaseDate: new Date(i.purchaseDate),
+          purchaseDate: i.purchaseDate ? new Date(i.purchaseDate) : null,
           createdAt: new Date(i.createdAt)
         })));
       }
@@ -59,11 +59,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Save data to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_CLASSIFICATIONS_KEY, JSON.stringify(classifications));
+    try {
+      localStorage.setItem(LOCAL_STORAGE_CLASSIFICATIONS_KEY, JSON.stringify(classifications));
+    } catch (error) {
+      console.error("Error saving classifications to localStorage:", error);
+      toast.error("Failed to save classifications");
+    }
   }, [classifications]);
 
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_ITEMS_KEY, JSON.stringify(items));
+    try {
+      localStorage.setItem(LOCAL_STORAGE_ITEMS_KEY, JSON.stringify(items));
+    } catch (error) {
+      console.error("Error saving items to localStorage:", error);
+      toast.error("Failed to save items");
+    }
   }, [items]);
 
   const addClassification = (name: string) => {
@@ -98,20 +108,30 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addItem = (itemData: Omit<Item, "id" | "createdAt">) => {
-    const newItem: Item = {
-      ...itemData,
-      id: uuidv4(),
-      createdAt: new Date()
-    };
-    setItems([...items, newItem]);
-    toast.success(`Item "${itemData.name}" added`);
+    try {
+      const newItem: Item = {
+        ...itemData,
+        id: uuidv4(),
+        createdAt: new Date()
+      };
+      setItems([...items, newItem]);
+      toast.success(`Item "${itemData.name}" added`);
+    } catch (error) {
+      console.error("Error adding item:", error);
+      toast.error("Failed to add item");
+    }
   };
 
   const updateItem = (id: string, itemData: Partial<Omit<Item, "id" | "createdAt" | "classificationId">>) => {
-    setItems(items.map(item => 
-      item.id === id ? { ...item, ...itemData } : item
-    ));
-    toast.success("Item updated");
+    try {
+      setItems(items.map(item => 
+        item.id === id ? { ...item, ...itemData } : item
+      ));
+      toast.success("Item updated");
+    } catch (error) {
+      console.error("Error updating item:", error);
+      toast.error("Failed to update item");
+    }
   };
 
   const deleteItem = (id: string) => {

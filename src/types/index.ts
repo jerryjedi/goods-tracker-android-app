@@ -15,3 +15,7 @@ export interface Item {
   memo: string;
   createdAt: Date;
 }
+
+export interface FileWithPreview extends File {
+  preview: string;
+}
