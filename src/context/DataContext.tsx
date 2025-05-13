@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Classification, Item } from "@/types";
+import { Classification, Item, ExportOptions } from "@/types";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
 
@@ -16,6 +16,8 @@ interface DataContextType {
   getItemsByClassification: (classificationId: string) => Item[];
   getClassification: (id: string) => Classification | undefined;
   getItem: (id: string) => Item | undefined;
+  exportData: (options: ExportOptions) => string;
+  downloadExport: (options: ExportOptions) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -151,6 +153,82 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return items.find(item => item.id === id);
   };
 
+  // Export data to Markdown format
+  const exportData = (options: ExportOptions): string => {
+    try {
+      let markdown = "# My Inventory\n\n";
+      
+      classifications.forEach((classification) => {
+        markdown += `## ${classification.name}\n\n`;
+        
+        const classificationItems = items.filter(
+          (item) => item.classificationId === classification.id
+        );
+        
+        if (classificationItems.length === 0) {
+          markdown += "No items in this classification.\n\n";
+          return;
+        }
+        
+        classificationItems.forEach((item) => {
+          markdown += `### ${item.name}\n\n`;
+          
+          if (item.purchaseDate) {
+            markdown += `**Purchase Date:** ${new Date(item.purchaseDate).toLocaleDateString()}\n\n`;
+          }
+          
+          if (item.price) {
+            markdown += `**Price:** ${new Intl.NumberFormat('en-US', { 
+              style: 'currency', 
+              currency: 'USD' 
+            }).format(item.price)}\n\n`;
+          }
+          
+          if (item.memo) {
+            markdown += `**Memo:**\n\n${item.memo}\n\n`;
+          }
+          
+          if (options.includePhotos && (item.photoUrl || item.photoData)) {
+            const photoData = item.photoData || item.photoUrl;
+            if (photoData) {
+              markdown += `**Photo:**\n\n![${item.name}](${photoData})\n\n`;
+            }
+          }
+          
+          markdown += "---\n\n";
+        });
+      });
+      
+      return markdown;
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast.error("Failed to export data");
+      return "# Export Error\n\nAn error occurred while exporting the data.";
+    }
+  };
+
+  // Download exported data as a file
+  const downloadExport = (options: ExportOptions) => {
+    try {
+      const markdown = exportData(options);
+      const blob = new Blob([markdown], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      
+      link.href = url;
+      link.download = `my-inventory-${new Date().toISOString().slice(0, 10)}.md`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Export completed successfully");
+    } catch (error) {
+      console.error("Error downloading export:", error);
+      toast.error("Failed to download export");
+    }
+  };
+
   return (
     <DataContext.Provider value={{ 
       classifications, 
@@ -163,7 +241,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       deleteItem,
       getItemsByClassification,
       getClassification,
-      getItem
+      getItem,
+      exportData,
+      downloadExport
     }}>
       {children}
     </DataContext.Provider>

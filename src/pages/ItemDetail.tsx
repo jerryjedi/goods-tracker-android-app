@@ -5,7 +5,7 @@ import { useData } from "@/context/DataContext";
 import Header from "@/components/Header";
 import ItemForm from "@/components/ItemForm";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Download } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -22,7 +22,7 @@ import {
 const ItemDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getItem, updateItem, deleteItem, getClassification } = useData();
+  const { getItem, updateItem, deleteItem, getClassification, downloadExport } = useData();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
@@ -58,6 +58,7 @@ const ItemDetail = () => {
   const handleEdit = (itemData: {
     name: string;
     photoUrl?: string;
+    photoData?: string;
     purchaseDate?: Date;
     price?: number;
     memo: string;
@@ -70,19 +71,35 @@ const ItemDetail = () => {
     navigate(`/classification/${item.classificationId}`);
   };
 
+  const handleExport = () => {
+    downloadExport({ 
+      includePhotos: true,
+      format: 'markdown'
+    });
+  };
+
+  // Use photoData if available, otherwise fall back to photoUrl
+  const imageSource = item.photoData || item.photoUrl;
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header 
         title={item.name} 
         showBackButton
+        rightContent={
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download size={16} className="mr-1" />
+            Export
+          </Button>
+        }
       />
 
       <main className="flex-1 p-4">
         <Card>
-          {item.photoUrl && (
+          {imageSource && (
             <div className="h-64 w-full overflow-hidden">
               <img 
-                src={item.photoUrl} 
+                src={imageSource} 
                 alt={item.name} 
                 className="h-full w-full object-cover"
               />
@@ -106,7 +123,7 @@ const ItemDetail = () => {
               {item.purchaseDate && (
                 <div>
                   <h3 className="text-sm font-semibold text-muted-foreground">Purchase Date</h3>
-                  <p>{item.purchaseDate.toLocaleDateString()}</p>
+                  <p>{new Date(item.purchaseDate).toLocaleDateString()}</p>
                 </div>
               )}
               

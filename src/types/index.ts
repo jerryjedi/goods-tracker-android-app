@@ -10,6 +10,7 @@ export interface Item {
   name: string;
   classificationId: string;
   photoUrl?: string;
+  photoData?: string; // Base64 encoded image data for persistence
   purchaseDate?: Date | null;
   price?: number | null;
   memo: string;
@@ -18,4 +19,9 @@ export interface Item {
 
 export interface FileWithPreview extends File {
   preview: string;
+}
+
+export interface ExportOptions {
+  includePhotos: boolean;
+  format: 'markdown';
 }

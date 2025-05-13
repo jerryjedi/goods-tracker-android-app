@@ -15,6 +15,7 @@ interface ItemFormProps {
   onSubmit: (itemData: {
     name: string;
     photoUrl?: string;
+    photoData?: string;
     purchaseDate?: Date;
     price?: number;
     memo: string;
@@ -33,6 +34,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
   const [formData, setFormData] = useState({
     name: "",
     photoUrl: "",
+    photoData: "",
     purchaseDate: new Date().toISOString().split("T")[0],
     price: "",
     memo: "",
@@ -49,6 +51,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
       setFormData({
         name: initialValues.name || "",
         photoUrl: initialValues.photoUrl || "",
+        photoData: initialValues.photoData || "",
         purchaseDate: initialValues.purchaseDate 
           ? new Date(initialValues.purchaseDate).toISOString().split("T")[0]
           : new Date().toISOString().split("T")[0],
@@ -56,8 +59,10 @@ const ItemForm: React.FC<ItemFormProps> = ({
         memo: initialValues.memo || "",
       });
       
-      // Set image preview if photoUrl exists
-      if (initialValues.photoUrl) {
+      // Set image preview if photoData or photoUrl exists
+      if (initialValues.photoData) {
+        setImagePreview(initialValues.photoData);
+      } else if (initialValues.photoUrl) {
         setImagePreview(initialValues.photoUrl);
       } else {
         setImagePreview(null);
@@ -66,6 +71,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
       setFormData({
         name: "",
         photoUrl: "",
+        photoData: "",
         purchaseDate: new Date().toISOString().split("T")[0],
         price: "",
         memo: "",
@@ -102,7 +108,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
       if (e.target.files && e.target.files[0]) {
         const file = e.target.files[0];
         
-        // Create a blob URL for the file
+        // Create a blob URL for preview
         const preview = URL.createObjectURL(file);
         
         // Create a FileWithPreview object
@@ -113,13 +119,28 @@ const ItemForm: React.FC<ItemFormProps> = ({
         setSelectedFile(fileWithPreview);
         setImagePreview(preview);
         
-        // Clear the photoUrl as we'll use the file instead
-        setFormData({ ...formData, photoUrl: "" });
+        // Convert to Base64 for storage
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          setFormData({ 
+            ...formData, 
+            photoUrl: "", 
+            photoData: base64String 
+          });
+          setIsProcessing(false);
+        };
+        reader.onerror = () => {
+          toast.error("Failed to process image");
+          setIsProcessing(false);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setIsProcessing(false);
       }
     } catch (error) {
       console.error("Error processing image:", error);
       toast.error("Failed to process the image. Please try a different one.");
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -152,7 +173,8 @@ const ItemForm: React.FC<ItemFormProps> = ({
     
     onSubmit({
       name: formData.name.trim(),
-      photoUrl: selectedFile ? imagePreview || undefined : formData.photoUrl.trim() || undefined,
+      photoUrl: formData.photoUrl.trim() || undefined,
+      photoData: formData.photoData || undefined,
       purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
       price: formData.price ? parseFloat(formData.price) : undefined,
       memo: formData.memo.trim(),
@@ -211,7 +233,7 @@ const ItemForm: React.FC<ItemFormProps> = ({
                   {isProcessing ? "Processing..." : selectedFile ? "Change Image" : "Upload Image"}
                 </Button>
                 
-                {!selectedFile && (
+                {!selectedFile && !formData.photoData && (
                   <div className="mt-2 w-full">
                     <Label htmlFor="photoUrl">Or enter image URL</Label>
                     <Input

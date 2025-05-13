@@ -7,12 +7,12 @@ import ItemCard from "@/components/ItemCard";
 import ItemForm from "@/components/ItemForm";
 import NoData from "@/components/NoData";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 
 const ClassificationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getClassification, getItemsByClassification, addItem } = useData();
+  const { getClassification, getItemsByClassification, addItem, downloadExport } = useData();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   
   if (!id) {
@@ -32,11 +32,19 @@ const ClassificationDetail = () => {
     setIsAddDialogOpen(true);
   };
 
+  const handleExport = () => {
+    downloadExport({ 
+      includePhotos: true,
+      format: 'markdown'
+    });
+  };
+
   const handleAddItem = (itemData: {
     name: string;
     photoUrl?: string;
-    purchaseDate: Date;
-    price: number;
+    photoData?: string;
+    purchaseDate?: Date;
+    price?: number;
     memo: string;
   }) => {
     addItem({
@@ -51,10 +59,16 @@ const ClassificationDetail = () => {
         title={classification.name} 
         showBackButton
         rightContent={
-          <Button onClick={handleAddClick} size="sm">
-            <Plus size={16} className="mr-1" />
-            Add Item
-          </Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download size={16} className="mr-1" />
+              Export
+            </Button>
+            <Button onClick={handleAddClick} size="sm">
+              <Plus size={16} className="mr-1" />
+              Add Item
+            </Button>
+          </div>
         } 
       />
 

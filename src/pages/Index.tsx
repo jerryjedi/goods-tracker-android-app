@@ -6,7 +6,7 @@ import ClassificationCard from "@/components/ClassificationCard";
 import ClassificationForm from "@/components/ClassificationForm";
 import NoData from "@/components/NoData";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const Index = () => {
-  const { classifications, addClassification, updateClassification, deleteClassification } = useData();
+  const { classifications, addClassification, updateClassification, deleteClassification, downloadExport } = useData();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -56,15 +56,28 @@ const Index = () => {
     }
   };
 
+  const handleExport = () => {
+    downloadExport({
+      includePhotos: true,
+      format: 'markdown'
+    });
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header 
         title="My Inventory" 
         rightContent={
-          <Button onClick={handleAddClick} size="sm">
-            <Plus size={16} className="mr-1" />
-            Add Classification
-          </Button>
+          <div className="flex space-x-2">
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Download size={16} className="mr-1" />
+              Export
+            </Button>
+            <Button onClick={handleAddClick} size="sm">
+              <Plus size={16} className="mr-1" />
+              Add Classification
+            </Button>
+          </div>
         } 
       />
 
