@@ -2,6 +2,7 @@
 import { Item } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 interface ItemCardProps {
   item: Item;
@@ -9,6 +10,7 @@ interface ItemCardProps {
 
 const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
   const navigate = useNavigate();
+  const [imageError, setImageError] = useState(false);
   
   const viewItem = () => {
     navigate(`/item/${item.id}`);
@@ -16,14 +18,24 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
 
   const formatCurrency = (amount: number | undefined) => {
     if (amount === undefined) return "";
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: 'USD' 
-    }).format(amount);
+    try {
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: 'USD' 
+      }).format(amount);
+    } catch (error) {
+      console.error("Currency formatting error:", error);
+      return amount.toString();
+    }
   };
 
   // Use photoData if available, otherwise fall back to photoUrl
   const imageSource = item.photoData || item.photoUrl;
+
+  const handleImageError = () => {
+    console.log("Image failed to load:", item.name);
+    setImageError(true);
+  };
 
   return (
     <Card 
@@ -31,11 +43,12 @@ const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
       onClick={viewItem}
     >
       <div className="h-32 bg-accent flex items-center justify-center">
-        {imageSource ? (
+        {imageSource && !imageError ? (
           <img 
             src={imageSource} 
             alt={item.name} 
             className="h-full w-full object-cover"
+            onError={handleImageError}
           />
         ) : (
           <div className="text-4xl text-accent-foreground opacity-30">📷</div>

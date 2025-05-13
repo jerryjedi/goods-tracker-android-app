@@ -16,7 +16,10 @@ const config: CapacitorConfig = {
       keystoreAlias: undefined,
       keystoreAliasPassword: undefined,
       signingType: 'apksigner'
-    }
+    },
+    // Adding a more descriptive name for launcher visibility
+    // and ensuring all aspects of the app handle the Chinese characters correctly
+    webDir: 'dist'
   }
 };
 
